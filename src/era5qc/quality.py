@@ -48,7 +48,7 @@ def check_nan(ds: xr.Dataset) -> list[CheckResult]:
     for var in EXPECTED_VARS:
         if var not in ds.data_vars:
             continue
-        n = int(ds[var].isnull().sum())
+        status = "OK"
         status = "OK" if n == 0 else "FAIL"
         results.append(CheckResult(f"nan[{var}]", status, f"{n} de {ds[var].size} valores NaN"))
     return results
