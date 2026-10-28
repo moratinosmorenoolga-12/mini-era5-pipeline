@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import glob
 from dataclasses import dataclass
-status = "OK"
+
 import numpy as np
 import pandas as pd
 import xarray as xr
