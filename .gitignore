@@ -3,3 +3,4 @@ data/
 __pycache__/
 *.egg-info/
 mapa.png
+.venv-anemoi/

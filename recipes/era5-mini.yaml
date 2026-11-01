@@ -1,0 +1,12 @@
+description: |
+  Mini dataset ERA5 sobre Cataluna y la peninsula (enero 2023),
+  creado como proyecto de aprendizaje.
+
+dates:
+  start: 2023-01-01T00:00:00
+  end: 2023-01-31T18:00:00
+  frequency: 6h
+
+input:
+  netcdf:
+    path: data/data_stream-oper_stepType-*.nc
