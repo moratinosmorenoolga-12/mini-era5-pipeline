@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import glob
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -24,12 +26,30 @@ class CheckResult:
     detail: str
 
 
-def load_era5(data_dir: str = "data") -> xr.Dataset:
-    """Abre todos los .nc de una carpeta y los une en un solo Dataset."""
-    files = sorted(glob.glob(f"{data_dir}/*.nc"))
-    if not files:
-        raise FileNotFoundError(f"No hay archivos .nc en {data_dir}")
+def _open_folder(files: list[str]) -> xr.Dataset:
+    """Une los .nc de una misma carpeta (instant + accum) en un Dataset."""
     return xr.merge([xr.open_dataset(f) for f in files], compat="override")
+
+
+def load_era5(data_dir: str = "data/era5") -> xr.Dataset:
+    """Carga ERA5 desde una carpeta.
+
+    Admite dos disposiciones:
+    - los .nc directamente en data_dir (una sola descarga), o
+    - una subcarpeta por mes (data_dir/2023-01, data_dir/2023-02...), que se
+      unen a lo largo del tiempo.
+    """
+    groups: dict[Path, list[str]] = {}
+    for f in sorted(Path(data_dir).rglob("*.nc")):
+        groups.setdefault(f.parent, []).append(str(f))
+    if not groups:
+        raise FileNotFoundError(f"No hay archivos .nc en {data_dir}")
+    parts = [_open_folder(files) for _, files in sorted(groups.items())]
+    if len(parts) == 1:
+        return parts[0]
+    ds = xr.concat(parts, dim=_time_name(parts[0]), data_vars="all",
+                   coords="minimal", compat="override", join="exact")
+    return ds.sortby(_time_name(ds))
 
 
 def _time_name(ds: xr.Dataset) -> str:
@@ -121,7 +141,7 @@ def run_all(ds: xr.Dataset) -> list[CheckResult]:
     return results
 
 
-def main(data_dir: str = "data") -> int:
+def main(data_dir: str = "data/era5") -> int:
     ds = load_era5(data_dir)
     results = run_all(ds)
     for r in results:
@@ -133,4 +153,4 @@ def main(data_dir: str = "data") -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main(*sys.argv[1:2]))
