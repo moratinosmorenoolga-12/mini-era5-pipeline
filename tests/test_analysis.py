@@ -155,3 +155,20 @@ def test_qc_bridge_entiende_checkresult():
     assert r[0] == {"name": "nan", "status": "FAIL", "detail": "3 NaN"}
     assert r[1]["status"] == "OK"
     assert has_fail(r)
+
+
+def test_demo_no_se_confunde_con_datos_reales(tmp_path):
+    from era5qc.pipeline import run
+
+    cfg = {
+        "region": {"name": "Test", "area": [43, 0, 41, 2]},
+        "period": {"years": [2023], "months": [1], "hours": ["00:00", "06:00", "12:00", "18:00"]},
+        "variables": [], "points": {"A": [42.0, 1.0]},
+        "paths": {"raw": str(tmp_path / "raw"), "outputs": str(tmp_path / "out")},
+        "dashboard": {"offline": False},
+    }
+    assert run(cfg, demo=True, log=lambda *_: None) == 0
+    assert (tmp_path / "demo").exists() and not (tmp_path / "raw").exists()
+    # si alguien copia datos de la demo en raw/, el modo real se niega a usarlos
+    (tmp_path / "demo").rename(tmp_path / "raw")
+    assert run(cfg, skip_download=True, log=lambda *_: None) == 2

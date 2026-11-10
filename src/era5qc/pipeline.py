@@ -39,6 +39,11 @@ def load_config(path) -> dict:
 
 
 def run(cfg: dict, skip_download=False, demo=False, log=print) -> int:
+    if demo:
+        # Los datos sintéticos van a su propia carpeta (data/demo) para que
+        # nunca se confundan con una descarga real.
+        raw = Path(cfg["paths"]["raw"])
+        cfg = {**cfg, "paths": {**cfg["paths"], "raw": str(raw.parent / "demo")}}
     out = Path(cfg["paths"]["outputs"])
     out.mkdir(parents=True, exist_ok=True)
 
@@ -61,6 +66,10 @@ def run(cfg: dict, skip_download=False, demo=False, log=print) -> int:
         paths = download_period(cfg)
 
     ds = open_era5(paths)
+    if not demo and str(ds.attrs.get("synthetic_demo", "")).lower() == "true":
+        log("ERROR: los archivos de " + cfg["paths"]["raw"] + " son datos SINTÉTICOS de la demo.")
+        log("       Bórralos (rm -r " + cfg["paths"]["raw"] + ") y vuelve a ejecutar para descargar los reales.")
+        return 2
     log(f"      {ds.sizes['valid_time']} instantes, rejilla "
         f"{ds.sizes['latitude']}×{ds.sizes['longitude']}, variables {list(ds.data_vars)}")
 
